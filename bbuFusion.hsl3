@@ -1,0 +1,44 @@
+﻿#encoding=utf-8
+# BBU Fusion Script
+''' 2021-04-22: Initial release
+'''
+# ----------------------------------------------------------VARIABLES----------------------------------------------------------#
+txModeList = []
+rru2TList = ['MRRU V2', 'RRU3959']
+rru1TList = ['MRRU V3', 'RRU3936']
+# ----------------------------------------------------------FUNCTIONS----------------------------------------------------------#
+
+# -----------------------------------------------------------MAINCODE----------------------------------------------------------#
+Print('Altice DR BBU Fusion Tool')
+Print('Restrictions: Only works with 3G Configuration.\n')
+# Ask for user input
+srcNe = UserInput('Input 3G NE Name (Ex.: U1122S): ')
+dstNe = UserInput('Input Destination NE Name (Ex.: M1122S): ')
+# First, let's collect the information from the source NE
+ConnectNE(srcNe)
+# Get all local cell IDs
+@LST ULOCELL:MODE=ALLLOCALCELL;
+uLoCellParsed = ParseMMLRpt(GetMMLReport(0))
+uLoCellIdList = GetColumnByName(uLoCellParsed, 0, 'Local Cell ID')
+ClearMMLBuffer()
+# Get all RRU's TxMode
+@LST RRU:;
+rruSrnParsed = ParseMMLRpt(GetMMLReport(0))
+rruSrnList = GetColumnByName(rruSrnParsed, 0, 'Subrack No.')
+ClearMMLBuffer()
+for srn in rruSrnList
+	SendMML('DSP BRDMFRINFO:CN=0,SRN=' + srn + ',SN=0;')
+	rruSerialNumParsed = ParseMMLRpt(GetMMLReport(0))
+	rruSerialNum = GetAttrValueByName(rruSerialNumParsed, 0, 'Description', 0)
+	for rruModel in rru2TList
+        if rruModel in rruDescription
+            txModeList.append({srn:'2T2R'})
+        end
+    end
+    for rruModel in rru1TList
+        if rruModel in rruDescription
+            txModeList.append({srn:'1T2R'})
+        end
+    end
+# for srn in rruSrnList	
+end
