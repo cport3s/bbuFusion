@@ -7,7 +7,109 @@ txModeList = []
 rru2TList = ['MRRU V2', 'RRU3959']
 rru1TList = ['MRRU V3', 'RRU3936']
 # ----------------------------------------------------------FUNCTIONS----------------------------------------------------------#
+def cpip_getter(cpbearerf)
+    # Function to get DEVIP starting with the CP Bearer ID
+    ClearMMLBuffer()
+    SendMML('DSP CPBEARER:CPBEARID=' + cpbearerf + ';')
+    sctplinkparsed = ParseMMLRpt(GetMMLReport(0))
+    # Get SCTP Link ID
+    sctplink = GetAttrValueByIdx(sctplinkparsed, 0, 2, 0)
+    SendMML('LST SCTPLNK:SCTPNO=' + sctplink + ';')
+    devipparsed = ParseMMLRpt(GetMMLReport(0))
+    # Get Local IP (DEVIP)
+    devipf = GetAttrValueByIdx(devipparsed, 0, 8, 0)
+    # Get Peer IP Address
+    peeripf = GetAttrValueByIdx(devipparsed, 0, 13, 0)
+    return devipf,peeripf
+end
 
+def gw_getter(devipf)
+    # Function to get Gateway IP starting with the DEVIP
+    gwipf = ""
+    vlanidf = ""
+    ClearMMLBuffer()
+    @LST VLANMAP:;
+    vlanmapparsed = ParseMMLRpt(GetMMLReport(0))
+    gwlist = GetColumnByIndex(vlanmapparsed, 0, 1)
+    vlanlist = GetColumnByIndex(vlanmapparsed, 0, 4)
+    for i in range(len(gwlist))
+        # Check if DEVIP and GW are on the same subnet segment
+        if checkip_segment(devipf, gwlist[i])
+            gwipf = gwlist[i]
+            vlanidf = vlanlist[i]
+        end
+    end
+    return gwipf,vlanidf
+end
+
+def checkip_segment(ipf, gwip)
+    # Function to determine if an IP and a GW are in the same segment. Arguments are 2 IP address and the function will return True if they are on the same segment, otherwise it'll return False.
+    ClearMMLBuffer()
+    segment = False
+    # Function arguments are tuples. We must convert to string to split by dot.
+    iplist = str(ipf).split('.')
+    gwiplist = str(gwip).split('.')
+    if iplist[0] == gwiplist[0] and iplist[1] == gwiplist[1] and iplist[2] == gwiplist[2]
+        segment = True
+    end
+    return segment
+end
+
+def ptp_getter(gwipf)
+    # Function to get PTP IP based on the Gateway IP. Will return an IP list.
+    ClearMMLBuffer()
+    @LST IPCLKLINK:;
+    ptpiplst = '0.0.0.0'
+    ptplinkparsed = ParseMMLRpt(GetMMLReport(0))
+    # Loop through all the reports outputed by the LST command
+    for n in range(GetRecordNum(ptplinkparsed, 0))
+        ptpip = GetAttrValueByIdx(ptplinkparsed, 0, 9, n)
+        # If the IP on the PTP Link is on the same segmente as the Gateway IP, then append it to the ptp ip list.
+        if checkip_segment(ptpip, gwipf)
+            ptpiplst = ptpip
+        else
+            continue
+        end
+    end
+    return ptpiplst
+end
+
+def om_getter(gwipf)
+    # Function to check if OMCH IP is on GW segment. Function takes an IP and checks if the OMCH ip address is on the same segment. If true, it'll return the OMCH IP, otherwise it'll return NULL
+    ClearMMLBuffer()
+    @LST OMCH:;
+    omchlst = '0.0.0.0'
+    omchparsed = ParseMMLRpt(GetMMLReport(0))
+    # Loop through all the reports outputed by the LST command
+    for n in range(GetRecordNum(omchparsed, 0))
+        omip = GetAttrValueByIdx(omchparsed, 0, 2, n)
+        if checkip_segment(omip, gwipf)
+            omchlst = omip
+        else
+            continue
+        end
+    end
+    return omchlst
+end
+
+def upip_getter(devipf)
+    ClearMMLBuffer()
+    ippathipf = ""
+    @LST IPPATH:;
+    ippathparsed = ParseMMLRpt(GetMMLReport(0))
+    # Get Local IP Column from the LST output
+    ippath = GetColumnByIndex(ippathparsed, 0, 17)
+    for ip in ippath
+        # Check if DEVIP and current local ip on ippath are on the same network segment
+        if checkip_segment(devipf, ip)
+            ippathipf = ip
+            break
+        else
+            continue
+        end
+    end
+    return ippathipf
+end
 # -----------------------------------------------------------MAINCODE----------------------------------------------------------#
 Print('Altice DR BBU Fusion Tool')
 Print('Restrictions: Only works with 3G Configuration.\n')
@@ -29,7 +131,7 @@ ClearMMLBuffer()
 for srn in rruSrnList
 	SendMML('DSP BRDMFRINFO:CN=0,SRN=' + srn + ',SN=0;')
 	rruSerialNumParsed = ParseMMLRpt(GetMMLReport(0))
-	rruSerialNum = GetAttrValueByName(rruSerialNumParsed, 0, 'Description', 0)
+	rruDescription = GetAttrValueByName(rruSerialNumParsed, 0, 'Description', 0)
 	ClearMMLBuffer()
 	for rruModel in rru2TList
         if rruModel in rruDescription
@@ -43,13 +145,58 @@ for srn in rruSrnList
     end
 # for srn in rruSrnList	
 end
-# Get IP Information
-@LST DEVIP:;
-devIpListParsed = ParseMMLRpt(GetMMLReport(0))
-devIpList = GetAttrValueByName(devIpListParsed, 0, 'IP Address', 0)
 ClearMMLBuffer()
-@LST VLANMAP:;
-vlanListParsed = ParseMMLRpt(GetMMLReport(0))
-vlanIpList = GetAttrValueByName(vlanListParsed, 0, 'Next Hop IP', 0)
-vlanIdList = GetAttrValueByName(vlanListParsed, 0, 'VLAN ID', 0)
+# Get IP Information
+# Let's check if there's an IuB Interface Configured.
+@LST IUBCP:;
+iubcpparsedreport = ParseMMLRpt(GetMMLReport(0))
+# Check if there's an IuB interface configured
+if GetRecordNum(iubcpparsedreport, 0) != 0
+    Print(StrfTime("%Y%m%d:%H%M%S:") + 'site has NodeB, collecting data.')
+    iubcpbearer = GetAttrValueByIdx(iubcpparsedreport, 0, 2, 0)
+    # Get the CP IP
+    umtscpdevip, umtspeerip = cpip_getter(iubcpbearer)
+    # Get the gateway for the UMTS IP Segment and the VLAN ID
+    umtsgw, umtsvlanid = gw_getter(umtscpdevip)
+    # Now we check if the PTP IP is on the UMTS DEVIP Segment
+    umtsptpdevip = ptp_getter(umtsgw)
+    # Now we check if the O&M IP is on the UMTS DEVIP Segment
+    umtsomip = om_getter(umtsgw)
+    # Now we look for the UP IP
+    umtsupdevip = upip_getter(umtscpdevip)
+else
+    Print(StrfTime("%Y%m%d:%H%M%S:") + 'site doesn\'t have NodeB.')
+end
+
+# Let's configure on the Destination BBU
+ConnectNE(dstNe)
+# IP Transport Layer
+SendMML('ADD DEVIP:SN=7,SBT=BASE_BOARD,PT=ETH,PN=0,IP="' + umtscpdevip + '",MASK="255.255.255.248",USERLABEL="3G_UP/CP/PTP";')
+SendMML('ADD DEVIP:SN=7,SBT=BASE_BOARD,PT=ETH,PN=0,IP="' + umtsomip + '",MASK="255.255.255.248",USERLABEL="3G_OM";')
+SendMML('ADD VLANMAP:NEXTHOPIP="' + umtsgw + '",MASK="255.255.255.248",VLANMODE=SINGLEVLAN,VLANID=' + umtsvlanid + ',SETPRIO=DISABLE,FORCEEXECUTE=YES;')
+SendMML('ADD IPRT:RTIDX=105,SN=7,SBT=BASE_BOARD,DSTIP="' + umtspeerip + '",DSTMASK="255.255.255.248",RTTYPE=NEXTHOP,NEXTHOP="' + umtsgw + '",MTUSWITCH=OFF,DESCRI="to_RNC",FORCEEXECUTE=YES;')
+SendMML('ADD IPRT:RTIDX=101,SN=7,SBT=BASE_BOARD,DSTIP="172.16.160.0",DSTMASK="255.255.255.128",RTTYPE=NEXTHOP,NEXTHOP="' + umtsgw + '",MTUSWITCH=OFF,DESCRI="to_U2020_Taishan_Trace_Server_UMTS",FORCEEXECUTE=YES;')
+SendMML('ADD IPRT:RTIDX=103,SN=7,SBT=BASE_BOARD,DSTIP="172.19.8.0",DSTMASK="255.255.255.0",RTTYPE=NEXTHOP,NEXTHOP="' + umtsgw + '",MTUSWITCH=OFF,DESCRI="to_IPCLK3000_UMTS",FORCEEXECUTE=YES;')
+SendMML('ADD IPRT:RTIDX=107,SN=7,SBT=BASE_BOARD,DSTIP="172.17.48.72",DSTMASK="255.255.255.248",RTTYPE=NEXTHOP,NEXTHOP="' + umtsgw + '",MTUSWITCH=OFF,DESCRI="to_NTP_UMTS",FORCEEXECUTE=YES;')
+SendMML('ADD SCTPLNK:SCTPNO=3000,IPVERSION=IPv4,LOCIP="' + umtscpdevip + '",LOCPORT=9000,PEERIP="' + umtspeerip + '",PEERPORT=58080,AUTOSWITCH=ENABLE,DESCRI="NCP";')
+SendMML('ADD SCTPLNK:SCTPNO=3001,IPVERSION=IPv4,LOCIP="' + umtscpdevip + '",LOCPORT=9001,PEERIP="' + umtspeerip + '",PEERPORT=58080,AUTOSWITCH=ENABLE,DESCRI="CCP";')
+SendMML('ADD IPPATH:PATHID=0,TRANSCFGMODE=OLD,SN=7,SBT=BASE_BOARD,PT=ETH,JNRSCGRP=DISABLE,LOCALIP="' + umtscpdevip + '",PEERIP="' + umtspeerip + '",PATHTYPE=FIXED,DSCP=46,IPMUXSWITCH=DISABLE,DESCRI="3G_RT";')
+SendMML('ADD IPPATH:PATHID=1,TRANSCFGMODE=OLD,SN=7,SBT=BASE_BOARD,PT=ETH,JNRSCGRP=DISABLE,LOCALIP="' + umtscpdevip + '",PEERIP="' + umtspeerip + '",PATHTYPE=FIXED,DSCP=10,IPMUXSWITCH=DISABLE,DESCRI="3G_NO_RT";')
+SendMML('ADD IPPATH:PATHID=2,TRANSCFGMODE=OLD,SN=7,SBT=BASE_BOARD,PT=ETH,JNRSCGRP=DISABLE,LOCALIP="' + umtscpdevip + '",PEERIP="' + umtspeerip + '",PATHTYPE=FIXED,DSCP=12,IPMUXSWITCH=DISABLE,DESCRI="3G_DATA";')
+SendMML('ADD CPBEARER:CPBEARID=3000,BEARTYPE=SCTP,LINKNO=3000,FLAG=MASTER;')
+SendMML('ADD CPBEARER:CPBEARID=3001,BEARTYPE=SCTP,LINKNO=3001,FLAG=MASTER;')
+SendMML('ADD IUBCP:CPPT=NCP,CPBEARID=3000;')
+SendMML('ADD IUBCP:CPPT=CCP,CPBEARID=3001;')
+# Physical Layer
+
+
+Print(uLoCellIdList)
+Print(txModeList)
+Print('CP IP: ' + umtscpdevip)
+Print('RNC IP: ' + umtspeerip)
+Print('GW IP: ' + umtsgw)
+Print('VLAN ID: ' + umtsvlanid)
+Print('PTP IP: ' + umtsptpdevip)
+Print('O&M IP: ' + umtsomip)
+Print('UP IP: ' + umtsupdevip)
 ClearMMLBuffer()
