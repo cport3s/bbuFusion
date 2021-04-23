@@ -30,6 +30,7 @@ for srn in rruSrnList
 	SendMML('DSP BRDMFRINFO:CN=0,SRN=' + srn + ',SN=0;')
 	rruSerialNumParsed = ParseMMLRpt(GetMMLReport(0))
 	rruSerialNum = GetAttrValueByName(rruSerialNumParsed, 0, 'Description', 0)
+	ClearMMLBuffer()
 	for rruModel in rru2TList
         if rruModel in rruDescription
             txModeList.append({srn:'2T2R'})
@@ -42,3 +43,13 @@ for srn in rruSrnList
     end
 # for srn in rruSrnList	
 end
+# Get IP Information
+@LST DEVIP:;
+devIpListParsed = ParseMMLRpt(GetMMLReport(0))
+devIpList = GetAttrValueByName(devIpListParsed, 0, 'IP Address', 0)
+ClearMMLBuffer()
+@LST VLANMAP:;
+vlanListParsed = ParseMMLRpt(GetMMLReport(0))
+vlanIpList = GetAttrValueByName(vlanListParsed, 0, 'Next Hop IP', 0)
+vlanIdList = GetAttrValueByName(vlanListParsed, 0, 'VLAN ID', 0)
+ClearMMLBuffer()
