@@ -4,7 +4,7 @@
     2021-04-26: Save U Config to external file.
 '''
 # ----------------------------------------------------------VARIABLES----------------------------------------------------------#
-txModeList = []
+txModeList = {}
 rru2TList = ['MRRU V2', 'RRU3959']
 rru1TList = ['MRRU V3', 'RRU3936']
 ulArfcn = []
@@ -160,12 +160,12 @@ for srn in rruSrnList
 	ClearMMLBuffer()
 	for rruModel in rru2TList
         if rruModel in rruDescription
-            txModeList.append({srn:'2T2R'})
+            txModeList[srn] = '2T2R'
         end
     end
     for rruModel in rru1TList
         if rruModel in rruDescription
-            txModeList.append({srn:'1T2R'})
+            txModeList[srn] = '1T2R'
         end
     end
 # for srn in rruSrnList	
