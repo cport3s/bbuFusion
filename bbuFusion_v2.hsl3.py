@@ -9,7 +9,7 @@ rru1TList = ['MRRU V3', 'RRU3936']
 ulArfcn = []
 dlArfcn = []
 maxPower = []
-uLocellRruSrn = []
+uLocellRruSrn = {}
 # ----------------------------------------------------------FUNCTIONS----------------------------------------------------------#
 def cpip_getter(cpbearerf)
     # Function to get DEVIP starting with the CP Bearer ID
@@ -266,74 +266,83 @@ if option == '1'
 	SendMML('ADD CPBEARER:CPBEARID=3001,BEARTYPE=SCTP,LINKNO=3001,FLAG=MASTER;')
 	SendMML('ADD IUBCP:CPPT=NCP,CPBEARID=3000;')
 	SendMML('ADD IUBCP:CPPT=CCP,CPBEARID=3001;')
-#elif option == '2'
-#	currentNe = UserInput('Input NE Name (Ex.: M1122S): ')
-#	ConnectNE(currentNe)
-#	# First let's get currentNe information
-#	# Get all local cell IDs
-#	@LST ULOCELL:MODE=ALLLOCALCELL;
-#	uLoCellParsed = ParseMMLRpt(GetMMLReport(0))
-#	uLoCellIdList = GetColumnByName(uLoCellParsed, 0, 'Local Cell ID')
-#	ClearMMLBuffer()
-#	# Get Localcell params
-#	for i in range(len(uLoCellIdList))
-#		# Find localcell's sectoreqm to assosiate with RRU srn
-#		SendMML('LST ULOCELLSECTOREQM:ULOCELLID=' + uLoCellIdList[i] + ';')
-#		uLocellSectorEqmParsed = ParseMMLRpt(GetMMLReport(0))
-#		uLocellSectorEqm = GetAttrValueByName(uLocellSectorEqmParsed, 0, 'Sector Equipment ID', 0)
-#		ClearMMLBuffer()
-#		SendMML('LST SECTOREQM:SECTOREQMID=' + uLocellSectorEqm + ';')
-#		sectorEqmPortParsed = ParseMMLRpt(GetMMLReport(0))
-#		uLocellRruSrn.append(GetAttrValueByName(sectorEqmPortParsed, 1, 'Subrack No.', 0))
-#		ClearMMLBuffer()
-#	# for i in range(len(uLoCellIdList))	
-#	end
-#	# Get all RRU's TxMode
-#	@LST RRU:;
-#	rruSrnParsed = ParseMMLRpt(GetMMLReport(0))
-#	rruSrnList = GetColumnByName(rruSrnParsed, 0, 'Subrack No.')
-#	ClearMMLBuffer()
-#	for srn in rruSrnList
-#		SendMML('DSP BRDMFRINFO:CN=0,SRN=' + srn + ',SN=0;')
-#		rruSerialNumParsed = ParseMMLRpt(GetMMLReport(0))
-#		rruDescription = GetAttrValueByName(rruSerialNumParsed, 0, 'Description', 0)
-#		ClearMMLBuffer()
-#		for rruModel in rru2TList
-#			if rruModel in rruDescription
-#				txModeList[srn] = '2T2R'
-#			end
-#		end
-#		for rruModel in rru1TList
-#			if rruModel in rruDescription
-#				txModeList[srn] = '1T2R'
-#			end
-#		end
-#	# for srn in rruSrnList	
-#	end
-#	for k,v in txModeList.items()
-#		sector = str(int(k[-1]))
-#		area = str(int(k[-1])+1)
-#		SendMML('ADD RRUCHAIN:RCN=8' + area + ',TT=CHAIN,BM=COLD,AT=LOCALPORT,HSRN=0,HSN=3,HPN=' + sector + ',CR=AUTO,USERDEFRATENEGOSW=OFF;')
-#		if v == '1T2R'
-#			SendMML('ADD RRU:CN=0,SRN=8' + area + ',SN=0,TP=TRUNK,RCN=8' + area + ',PS=0,RT=MRRU,RS=UL,RN="UL900_' + area + '",RXNUM=2,TXNUM=1,ALMTHRHLD=15,RUSPEC="RRU3936",MNTMODE=NORMAL,RFDCPWROFFALMDETECTSW=OFF,RFTXSIGNDETECTSW=OFF;')
-#			SendMML('ADD SECTOR:SECTORID=8' + area + ',SECNAME="UL900_' + area + '",ANTNUM=2,ANT1CN=0,ANT1SRN=8' + area + ',ANT1SN=0,ANT1N=R0A,ANT2CN=0,ANT2SRN=8' + area + ',ANT2SN=0,ANT2N=R0B,CREATESECTOREQM=FALSE;')
-#			SendMML('ADD SECTOREQM:SECTOREQMID=8' + area + '31,SECTORID=8' + area + ',ANTCFGMODE=ANTENNAPORT,ANTNUM=2,ANT1CN=0,ANT1SRN=8' + area + ',ANT1SN=0,ANT1N=R0A,ANTTYPE1=RXTX_MODE,ANT2CN=0,ANT2SRN=8' + area + ',ANT2SN=0,ANT2N=R0B,ANTTYPE2=RX_MODE;')
-#			SendMML('ADD SECTOREQM:SECTOREQMID=8' + area + '32,SECTORID=8' + area + ',ANTCFGMODE=ANTENNAPORT,ANTNUM=2,ANT1CN=0,ANT1SRN=8' + area + ',ANT1SN=0,ANT1N=R0A,ANTTYPE1=RXTX_MODE,ANT2CN=0,ANT2SRN=8' + area + ',ANT2SN=0,ANT2N=R0B,ANTTYPE2=RX_MODE;')
-#			SendMML('ADD SECTOREQM:SECTOREQMID=8' + area + '41,SECTORID=8' + area + ',ANTCFGMODE=ANTENNAPORT,ANTNUM=2,ANT1CN=0,ANT1SRN=8' + area + ',ANT1SN=0,ANT1N=R0A,ANTTYPE1=RXTX_MODE,ANT2CN=0,ANT2SRN=8' + area + ',ANT2SN=0,ANT2N=R0B,ANTTYPE2=RX_MODE;')
-#		else
-#			SendMML('ADD RRU:CN=0,SRN=8' + area + ',SN=0,TP=TRUNK,RCN=8' + area + ',PS=0,RT=MRRU,RS=UL,RN="UL900_' + area + '",RXNUM=2,TXNUM=2,ALMTHRHLD=15,RUSPEC="RRU3959",MNTMODE=NORMAL,RFDCPWROFFALMDETECTSW=OFF,RFTXSIGNDETECTSW=OFF;')
-#			SendMML('ADD SECTOR:SECTORID=8' + area + ',SECNAME="UL900_' + area + '",ANTNUM=2,ANT1CN=0,ANT1SRN=8' + area + ',ANT1SN=0,ANT1N=R0A,ANT2CN=0,ANT2SRN=8' + area + ',ANT2SN=0,ANT2N=R0B,CREATESECTOREQM=FALSE;')
-#			SendMML('ADD SECTOREQM:SECTOREQMID=8' + area + '31,SECTORID=8' + area + ',ANTCFGMODE=ANTENNAPORT,ANTNUM=2,ANT1CN=0,ANT1SRN=8' + area + ',ANT1SN=0,ANT1N=R0A,ANTTYPE1=RXTX_MODE,ANT2CN=0,ANT2SRN=8' + area + ',ANT2SN=0,ANT2N=R0B,ANTTYPE2=RX_MODE;')
-#			SendMML('ADD SECTOREQM:SECTOREQMID=8' + area + '32,SECTORID=8' + area + ',ANTCFGMODE=ANTENNAPORT,ANTNUM=2,ANT1CN=0,ANT1SRN=8' + area + ',ANT1SN=0,ANT1N=R0A,ANTTYPE1=RX_MODE,ANT2CN=0,ANT2SRN=8' + area + ',ANT2SN=0,ANT2N=R0B,ANTTYPE2=RXTX_MODE;')
-#			SendMML('ADD SECTOREQM:SECTOREQMID=8' + area + '41,SECTORID=8' + area + ',ANTCFGMODE=ANTENNAPORT,ANTNUM=2,ANT1CN=0,ANT1SRN=8' + area + ',ANT1SN=0,ANT1N=R0A,ANTTYPE1=RXTX_MODE,ANT2CN=0,ANT2SRN=8' + area + ',ANT2SN=0,ANT2N=R0B,ANTTYPE2=RXTX_MODE;')
-#		# if v = '1T2R'
-#		end
-#	# for k,v in txModeList
-#	end
-#	for i in range(len(uLoCellIdList))
-#		SendMML('ADD ULOCELLSECTOREQM:ULOCELLID=' + uLoCellIdList[i] + ',SECTOREQMID=8131,SECTOREQMPROPERTY=NORMAL;')
-#	# for i in range(len(uLoCellIdList))
-#	end
+elif option == '2'
+	currentNe = UserInput('Input NE Name (Ex.: M1122S): ')
+	ConnectNE(currentNe)
+	# First let's get currentNe information
+	# Get all local cell IDs
+	@LST ULOCELL:MODE=ALLLOCALCELL;
+	uLoCellParsed = ParseMMLRpt(GetMMLReport(0))
+	uLoCellIdList = GetColumnByName(uLoCellParsed, 0, 'Local Cell ID')
+	ClearMMLBuffer()
+	# Get Localcell params
+	for i in range(len(uLoCellIdList))
+		# Find localcell's sectoreqm to assosiate with RRU srn
+		SendMML('LST ULOCELLSECTOREQM:ULOCELLID=' + uLoCellIdList[i] + ';')
+		uLocellSectorEqmParsed = ParseMMLRpt(GetMMLReport(0))
+		uLocellSectorEqm = GetAttrValueByName(uLocellSectorEqmParsed, 0, 'Sector Equipment ID', 0)
+		ClearMMLBuffer()
+		SendMML('LST SECTOREQM:SECTOREQMID=' + uLocellSectorEqm + ';')
+		sectorEqmPortParsed = ParseMMLRpt(GetMMLReport(0))
+		uLocellRruSrn[uLoCellIdList[i]] = GetAttrValueByName(sectorEqmPortParsed, 1, 'Subrack No.', 0)
+		ClearMMLBuffer()
+		# Get some localcell params
+		SendMML('LST ULOCELL:MODE=LOCALCELL,ULOCELLID=' + uLoCellIdList[i] + ';')
+		uLocellParamParsed = ParseMMLRpt(GetMMLReport(0))
+		ulArfcn.append(GetAttrValueByName(uLocellParamParsed, 0, 'UL Frequency Channel Number', 0))
+		dlArfcn.append(GetAttrValueByName(uLocellParamParsed, 0, 'DL Frequency Channel Number', 0))
+		maxPower.append(GetAttrValueByName(uLocellParamParsed, 0, 'Max Output Power(0.1dBm)', 0))
+		ClearMMLBuffer()
+	# for i in range(len(uLoCellIdList))	
+	end
+	# Get all RRU's TxMode
+	@LST RRU:;
+	rruSrnParsed = ParseMMLRpt(GetMMLReport(0))
+	rruSrnList = GetColumnByName(rruSrnParsed, 0, 'Subrack No.')
+	ClearMMLBuffer()
+	for srn in rruSrnList
+		SendMML('DSP BRDMFRINFO:CN=0,SRN=' + srn + ',SN=0;')
+		rruSerialNumParsed = ParseMMLRpt(GetMMLReport(0))
+		rruDescription = GetAttrValueByName(rruSerialNumParsed, 0, 'Description', 0)
+		ClearMMLBuffer()
+		for rruModel in rru2TList
+			if rruModel in rruDescription
+				txModeList[srn] = '2T2R'
+			end
+		end
+		for rruModel in rru1TList
+			if rruModel in rruDescription
+				txModeList[srn] = '1T2R'
+			end
+		end
+	# for srn in rruSrnList	
+	end
+	for k,v in txModeList.items()
+		sector = str(int(k[-1]))
+		area = str(int(k[-1])+1)
+		SendMML('ADD RRUCHAIN:RCN=8' + area + ',TT=CHAIN,BM=COLD,AT=LOCALPORT,HSRN=0,HSN=3,HPN=' + sector + ',CR=AUTO,USERDEFRATENEGOSW=OFF;')
+		if v == '1T2R'
+			SendMML('ADD RRU:CN=0,SRN=8' + area + ',SN=0,TP=TRUNK,RCN=8' + area + ',PS=0,RT=MRRU,RS=UL,RN="UL900_' + area + '",RXNUM=2,TXNUM=1,ALMTHRHLD=15,RUSPEC="RRU3936",MNTMODE=NORMAL,RFDCPWROFFALMDETECTSW=OFF,RFTXSIGNDETECTSW=OFF;')
+			SendMML('ADD SECTOR:SECTORID=8' + area + ',SECNAME="UL900_' + area + '",ANTNUM=2,ANT1CN=0,ANT1SRN=8' + area + ',ANT1SN=0,ANT1N=R0A,ANT2CN=0,ANT2SRN=8' + area + ',ANT2SN=0,ANT2N=R0B,CREATESECTOREQM=FALSE;')
+			SendMML('ADD SECTOREQM:SECTOREQMID=8' + area + '31,SECTORID=8' + area + ',ANTCFGMODE=ANTENNAPORT,ANTNUM=2,ANT1CN=0,ANT1SRN=8' + area + ',ANT1SN=0,ANT1N=R0A,ANTTYPE1=RXTX_MODE,ANT2CN=0,ANT2SRN=8' + area + ',ANT2SN=0,ANT2N=R0B,ANTTYPE2=RX_MODE;')
+			SendMML('ADD SECTOREQM:SECTOREQMID=8' + area + '32,SECTORID=8' + area + ',ANTCFGMODE=ANTENNAPORT,ANTNUM=2,ANT1CN=0,ANT1SRN=8' + area + ',ANT1SN=0,ANT1N=R0A,ANTTYPE1=RXTX_MODE,ANT2CN=0,ANT2SRN=8' + area + ',ANT2SN=0,ANT2N=R0B,ANTTYPE2=RX_MODE;')
+			SendMML('ADD SECTOREQM:SECTOREQMID=8' + area + '41,SECTORID=8' + area + ',ANTCFGMODE=ANTENNAPORT,ANTNUM=2,ANT1CN=0,ANT1SRN=8' + area + ',ANT1SN=0,ANT1N=R0A,ANTTYPE1=RXTX_MODE,ANT2CN=0,ANT2SRN=8' + area + ',ANT2SN=0,ANT2N=R0B,ANTTYPE2=RX_MODE;')
+		else
+			SendMML('ADD RRU:CN=0,SRN=8' + area + ',SN=0,TP=TRUNK,RCN=8' + area + ',PS=0,RT=MRRU,RS=UL,RN="UL900_' + area + '",RXNUM=2,TXNUM=2,ALMTHRHLD=15,RUSPEC="RRU3959",MNTMODE=NORMAL,RFDCPWROFFALMDETECTSW=OFF,RFTXSIGNDETECTSW=OFF;')
+			SendMML('ADD SECTOR:SECTORID=8' + area + ',SECNAME="UL900_' + area + '",ANTNUM=2,ANT1CN=0,ANT1SRN=8' + area + ',ANT1SN=0,ANT1N=R0A,ANT2CN=0,ANT2SRN=8' + area + ',ANT2SN=0,ANT2N=R0B,CREATESECTOREQM=FALSE;')
+			SendMML('ADD SECTOREQM:SECTOREQMID=8' + area + '31,SECTORID=8' + area + ',ANTCFGMODE=ANTENNAPORT,ANTNUM=2,ANT1CN=0,ANT1SRN=8' + area + ',ANT1SN=0,ANT1N=R0A,ANTTYPE1=RXTX_MODE,ANT2CN=0,ANT2SRN=8' + area + ',ANT2SN=0,ANT2N=R0B,ANTTYPE2=RX_MODE;')
+			SendMML('ADD SECTOREQM:SECTOREQMID=8' + area + '32,SECTORID=8' + area + ',ANTCFGMODE=ANTENNAPORT,ANTNUM=2,ANT1CN=0,ANT1SRN=8' + area + ',ANT1SN=0,ANT1N=R0A,ANTTYPE1=RX_MODE,ANT2CN=0,ANT2SRN=8' + area + ',ANT2SN=0,ANT2N=R0B,ANTTYPE2=RXTX_MODE;')
+			SendMML('ADD SECTOREQM:SECTOREQMID=8' + area + '41,SECTORID=8' + area + ',ANTCFGMODE=ANTENNAPORT,ANTNUM=2,ANT1CN=0,ANT1SRN=8' + area + ',ANT1SN=0,ANT1N=R0A,ANTTYPE1=RXTX_MODE,ANT2CN=0,ANT2SRN=8' + area + ',ANT2SN=0,ANT2N=R0B,ANTTYPE2=RXTX_MODE;')
+		# if v = '1T2R'
+		end
+	# for k,v in txModeList
+	end
+	for k,v in uLocellRruSrn.items()
+	#for i in range(len(uLoCellIdList))
+		if v == ''
+		SendMML('ADD ULOCELLSECTOREQM:ULOCELLID=' + uLoCellIdList[i] + ',SECTOREQMID=8131,SECTOREQMPROPERTY=NORMAL;')
+	# for i in range(len(uLoCellIdList))
+	end
 #elif option == '3'
 #	pass
 #else
