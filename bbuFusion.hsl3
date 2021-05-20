@@ -1,10 +1,11 @@
 ﻿#encoding=utf-8
 # BBU Fusion Script
 ''' 2021-04-22: Initial release
+    2021-05-20 Added 5909 RRU model to rru2TList
 '''
 # ----------------------------------------------------------VARIABLES----------------------------------------------------------#
 txModeList = {}
-rru2TList = ['MRRU V2', 'RRU3959']
+rru2TList = ['MRRU V2', 'RRU3959', '5909']
 rru1TList = ['MRRU V3', 'RRU3936']
 ulArfcn = []
 dlArfcn = []
