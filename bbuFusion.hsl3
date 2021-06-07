@@ -1,11 +1,12 @@
 ﻿#encoding=utf-8
 # BBU Fusion Script
 ''' 2021-04-22: Initial release
-    2021-05-20 Added 5909 RRU model to rru2TList
+    2021-05-20: Added 5909 RRU model to rru2TList
+    2021-06-01: Added old RRU model to rru2TList
 '''
 # ----------------------------------------------------------VARIABLES----------------------------------------------------------#
 txModeList = {}
-rru2TList = ['MRRU V2', 'RRU3959', '5905']
+rru2TList = ['MRRU V2', 'RRU3959', '5905', 'Distributed Base Station Radio Remote Unit(-48V,DHT 40W,1.25G,900M)']
 rru1TList = ['MRRU V3', 'RRU3936']
 ulArfcn = []
 dlArfcn = []
@@ -201,7 +202,7 @@ if option == '1'
 	ConnectNE(dstNe)
 	# Physical Layer
 	# Add Baseband Equipment
-	SendMML('ADD BRD:SN=3,BT=UBBP,BBWS=GSM-0&UMTS-1&LTE_FDD-0&LTE_TDD-0&NBIOT-0&NR-0,BRDSPEC="UBBPe4";')
+	SendMML('ADD BRD:SN=3,BT=UBBP,BBWS=GSM-0&UMTS-1&LTE_FDD-0&LTE_TDD-0&NBIOT-0&NR-0,BRDSPEC="UBBPg1";')
 	SendMML('ADD BASEBANDEQM:BASEBANDEQMID=0,BASEBANDEQMTYPE=DL,SN1=3;')
 	SendMML('ADD BASEBANDEQM:BASEBANDEQMID=0,BASEBANDEQMTYPE=UL,UMTSDEMMODE=DEM_2_CHAN,SN1=3;')
 	# Add RRU/Sectors
